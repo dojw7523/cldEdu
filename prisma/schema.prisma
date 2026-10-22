@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id                 String     @id @default(cuid())
+  email              String     @unique
+  passwordHash       String
+  name               String
+  role               Role       @default(MEMBER)
+  status             UserStatus @default(PENDING)
+  mustChangePassword Boolean    @default(false)
+  failedLogins       Int        @default(0)
+  lockedUntil        DateTime?
+  createdAt          DateTime   @default(now())
+
+  sessions      Session[]
+  posts         Post[]
+  comments      Comment[]
+  managedBoards BoardManager[]
+}
+
+model Session {
+  // SHA-256 hash of the cookie token; the raw token never touches the DB
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Board {
+  id         String @id @default(cuid())
+  slug       String @unique
+  name       String
+  sortOrder  Int    @default(0)
+  // Only managers of this board and admins may write when true (e.g. 공지사항)
+  restricted Boolean @default(false)
+
+  posts    Post[]
+  managers BoardManager[]
+}
+
+model BoardManager {
+  userId  String
+  boardId String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@id([userId, boardId])
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  boardId     String
+  authorId    String
+  title       String
+  contentHtml String
+  // Plain text copy of the body for search
+  contentText String
+  isPinned    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  editedAt    DateTime?
+  deletedAt   DateTime?
+
+  board       Board        @relation(fields: [boardId], references: [id])
+  author      User         @relation(fields: [authorId], references: [id])
+  comments    Comment[]
+  attachments Attachment[]
+
+  @@index([boardId, deletedAt, createdAt])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  postId    String
+  authorId  String
+  content   String
+  createdAt DateTime  @default(now())
+  editedAt  DateTime?
+  deletedAt DateTime?
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([postId, createdAt])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  postId     String
+  fileName   String
+  storageKey String
+  url        String
+  size       Int
+  mimeType   String
+  createdAt  DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
