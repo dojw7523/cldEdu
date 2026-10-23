@@ -34,10 +34,24 @@ export async function signup(_prev: FormState, formData: FormData): Promise<Form
   const exists = await prisma.user.findUnique({ where: { email } });
   if (exists) return { error: "이미 가입된 이메일입니다.", values };
 
+  // Bootstrap: the ADMIN_EMAIL account becomes an approved admin while the site has no admin yet
+  const bootstrapAdmin =
+    email === process.env.ADMIN_EMAIL?.trim().toLowerCase() &&
+    (await prisma.user.count({ where: { role: "ADMIN" } })) === 0;
+
   await prisma.user.create({
-    data: { email, name, passwordHash: await bcrypt.hash(parsed.data.password, 12) },
+    data: {
+      email,
+      name,
+      passwordHash: await bcrypt.hash(parsed.data.password, 12),
+      ...(bootstrapAdmin && { role: "ADMIN", status: "ACTIVE" }),
+    },
   });
-  return { message: "가입 신청이 접수되었습니다. 관리자가 승인하면 로그인할 수 있습니다." };
+  return {
+    message: bootstrapAdmin
+      ? "관리자 계정으로 가입되었습니다. 바로 로그인할 수 있습니다."
+      : "가입 신청이 접수되었습니다. 관리자가 승인하면 로그인할 수 있습니다.",
+  };
 }
 
 const loginSchema = z.object({
