@@ -49,15 +49,11 @@ http://localhost:3000 에서 `.env`의 `ADMIN_EMAIL` / `ADMIN_PASSWORD`로 로�
 2. Vercel 프로젝트의 **Storage** 탭에서 연결합니다.
    - **Neon** (Postgres): `DATABASE_URL`이 자동으로 들어갑니다.
    - **Blob**: `BLOB_READ_WRITE_TOKEN`이 자동으로 들어갑니다.
-3. 환경 변수에 `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`을 추가합니다.
-4. 배포합니다. `vercel-build` 스크립트가 `prisma migrate deploy`로 테이블을 만듭니다.
-5. 최초 1회, 로컬에서 운영 DB를 가리키게 하고 시드를 실행합니다.
+3. 환경 변수에 `ADMIN_EMAIL`(최초 관리자 이메일)을 추가합니다.
+4. 배포합니다. `vercel-build` 스크립트가 `prisma migrate deploy`로 테이블과 게시판 3개를 만듭니다.
+5. 사이트에서 `ADMIN_EMAIL`과 같은 이메일로 가입합니다. 관리자가 아직 없으면 이 계정이 승인 없이 바로 관리자가 됩니다. 이후 가입자는 모두 승인 대기로 들어갑니다.
 
-   ```bash
-   DATABASE_URL="<Neon 연결 문자열>" ADMIN_EMAIL=... ADMIN_PASSWORD=... npm run db:seed
-   ```
-
-6. 관리자로 로그인한 뒤 비밀번호를 바꿉니다(이름 옆 링크).
+함수 리전은 `vercel.json`에서 DB와 같은 싱가포르(`sin1`)로 고정했습니다.
 
 ## 스크립트
 
